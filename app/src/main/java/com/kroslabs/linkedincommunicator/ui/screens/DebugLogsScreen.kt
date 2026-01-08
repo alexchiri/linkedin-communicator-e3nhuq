@@ -94,7 +94,7 @@ fun DebugLogsScreen(
                     .padding(padding)
                     .background(Color(0xFF1E1E1E))
             ) {
-                items(logs, key = { it.timestamp }) { entry ->
+                items(logs, key = { it.id }) { entry ->
                     Text(
                         text = entry.formattedMessage,
                         fontFamily = FontFamily.Monospace,
