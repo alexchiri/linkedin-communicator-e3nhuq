@@ -122,12 +122,20 @@ Return only the corrected text, nothing else."""
 
     suspend fun makeTextConcise(apiKey: String, text: String, useMarkdown: Boolean): ApiResult<String> {
         val format = if (useMarkdown) "You may use markdown formatting." else "Return plain text only without any markdown formatting."
-        val systemPrompt = """You are a professional content editor. Your task is to make the following Swedish text more concise while preserving its core meaning and professional tone for LinkedIn.
+        val systemPrompt = """You are a professional content editor specializing in concise writing for social media.
 
-The LinkedIn character limit is 3000. Aim to reduce the text length while keeping all important information.
+Your task: Significantly shorten the following Swedish text while preserving its core message and professional tone suitable for LinkedIn.
+
+Requirements:
+- MUST reduce the text by at least 20-30%
+- Remove redundant words, phrases, and filler content
+- Combine sentences where possible
+- Keep the essential message and key points
+- Maintain professional tone
+- The LinkedIn character limit is 3000 characters
 $format
 
-Return only the shortened text, nothing else."""
+Return ONLY the shortened text, nothing else. Do not explain your changes."""
 
         return sendMessage(apiKey, systemPrompt, text)
     }
