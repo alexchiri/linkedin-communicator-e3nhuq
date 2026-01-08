@@ -13,8 +13,8 @@ android {
         applicationId = "com.kroslabs.linkedincommunicator"
         minSdk = 34
         targetSdk = 35
-        versionCode = 7
-        versionName = "1.1.5"
+        versionCode = 8
+        versionName = "1.1.6"
 
         vectorDrawables {
             useSupportLibrary = true
