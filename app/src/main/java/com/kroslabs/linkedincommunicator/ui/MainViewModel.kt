@@ -573,36 +573,35 @@ class MainViewModel(
     fun assemblePost() {
         val post = _currentPost.value ?: return
 
-        val parts = mutableListOf<String>()
-
-        // Build header showing which languages are included
-        val includedFlags = mutableListOf<String>()
-        if (post.swedishText.isNotBlank()) includedFlags.add(Language.SWEDISH.flag)
-        if (post.englishText.isNotBlank()) includedFlags.add(Language.ENGLISH.flag)
-        if (post.romanianText.isNotBlank()) includedFlags.add(Language.ROMANIAN.flag)
-
-        if (includedFlags.isEmpty()) {
+        if (post.swedishText.isBlank() && post.englishText.isBlank() && post.romanianText.isBlank()) {
             _errorMessage.value = "No content to assemble"
             return
         }
 
-        // Add each language section with flag separator
-        if (post.swedishText.isNotBlank()) {
-            parts.add("${Language.SWEDISH.flag} ${Language.SWEDISH.displayName}\n\n${post.swedishText}")
-        }
-        if (post.englishText.isNotBlank()) {
-            parts.add("${Language.ENGLISH.flag} ${Language.ENGLISH.displayName}\n\n${post.englishText}")
-        }
-        if (post.romanianText.isNotBlank()) {
-            parts.add("${Language.ROMANIAN.flag} ${Language.ROMANIAN.displayName}\n\n${post.romanianText}")
-        }
+        val assembledText = """
+[🇸🇪] [🇬🇧 below] [🇷🇴 mai jos]
+${post.swedishText}
 
-        val assembledText = parts.joinToString("\n\n---\n\n")
+[🇬🇧] [🇷🇴 mai jos]
+${post.englishText}
+
+[🇷🇴]
+${post.romanianText}
+        """.trimIndent()
+
+        // Update workflow stage to Ready to Post
+        val updatedPost = post.copy(
+            workflowStage = WorkflowStage.READY_TO_POST,
+            modifiedAt = System.currentTimeMillis()
+        )
+        _currentPost.value = updatedPost
+        _openPosts.value = _openPosts.value.map { if (it.id == post.id) updatedPost else it }
+
         _assembledPostState.value = AssembledPostState(
             assembledText = assembledText,
             isVisible = true
         )
-        DebugLogger.d(tag, "Assembled post with ${includedFlags.size} languages")
+        DebugLogger.d(tag, "Assembled post and set to Ready to Post")
     }
 
     fun dismissAssembledPost() {
