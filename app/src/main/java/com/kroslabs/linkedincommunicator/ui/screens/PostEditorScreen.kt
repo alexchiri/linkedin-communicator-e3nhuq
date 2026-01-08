@@ -1,5 +1,6 @@
 package com.kroslabs.linkedincommunicator.ui.screens
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -10,6 +11,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Close
@@ -18,7 +20,6 @@ import androidx.compose.material.icons.filled.MergeType
 import androidx.compose.material.icons.filled.SwapHoriz
 import androidx.compose.material3.BottomAppBar
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.ScrollableTabRow
@@ -125,37 +126,29 @@ fun PostEditorScreen(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceEvenly
             ) {
-                IconButton(onClick = onShowAiActions) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Icon(Icons.Default.AutoAwesome, contentDescription = "AI Actions")
-                        Text("AI", style = MaterialTheme.typography.labelSmall)
-                    }
-                }
-                IconButton(onClick = onShowPostSwitcher) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Icon(Icons.Default.SwapHoriz, contentDescription = "Switch Post")
-                        Text("Switch", style = MaterialTheme.typography.labelSmall)
-                    }
-                }
-                IconButton(onClick = onShowVersionHistory) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Icon(Icons.Default.History, contentDescription = "Version History")
-                        Text("History", style = MaterialTheme.typography.labelSmall)
-                    }
-                }
-                IconButton(onClick = onAssemblePost) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Icon(Icons.Default.MergeType, contentDescription = "Assemble Post")
-                        Text("Assemble", style = MaterialTheme.typography.labelSmall)
-                    }
-                }
-                IconButton(onClick = { viewModel.closeCurrentPost() }) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Icon(Icons.Default.Close, contentDescription = "Close Post")
-                        Text("Close", style = MaterialTheme.typography.labelSmall)
-                    }
-                }
+                ToolbarButton(onClick = onShowAiActions, icon = Icons.Default.AutoAwesome, label = "AI")
+                ToolbarButton(onClick = onShowPostSwitcher, icon = Icons.Default.SwapHoriz, label = "Switch")
+                ToolbarButton(onClick = onShowVersionHistory, icon = Icons.Default.History, label = "History")
+                ToolbarButton(onClick = onAssemblePost, icon = Icons.Default.MergeType, label = "Assemble")
+                ToolbarButton(onClick = { viewModel.closeCurrentPost() }, icon = Icons.Default.Close, label = "Close")
             }
         }
+    }
+}
+
+@Composable
+private fun ToolbarButton(
+    onClick: () -> Unit,
+    icon: ImageVector,
+    label: String
+) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier
+            .clickable(onClick = onClick)
+            .padding(horizontal = 12.dp, vertical = 8.dp)
+    ) {
+        Icon(icon, contentDescription = label)
+        Text(label, style = MaterialTheme.typography.labelSmall)
     }
 }
