@@ -69,18 +69,26 @@ class ClaudeApiService {
 
     suspend fun sendMessage(apiKey: String, systemPrompt: String, userMessage: String): ApiResult<String> {
         return try {
-            DebugLogger.d(tag, "Sending message to Claude API")
+            DebugLogger.d(tag, "=== API Request ===")
+            DebugLogger.d(tag, "System prompt: ${systemPrompt.take(200)}...")
+            DebugLogger.d(tag, "User message length: ${userMessage.length} chars")
+            DebugLogger.d(tag, "User message preview: ${userMessage.take(100)}...")
+
+            val request = ClaudeRequest(
+                messages = listOf(
+                    ClaudeMessage(role = "user", content = "$systemPrompt\n\n$userMessage")
+                )
+            )
+            DebugLogger.d(tag, "Request model: ${request.model}, maxTokens: ${request.maxTokens}")
+
             val response = client.post(baseUrl) {
                 contentType(ContentType.Application.Json)
                 header("x-api-key", apiKey)
                 header("anthropic-version", "2023-06-01")
-                setBody(ClaudeRequest(
-                    messages = listOf(
-                        ClaudeMessage(role = "user", content = "$systemPrompt\n\n$userMessage")
-                    )
-                ))
+                setBody(request)
             }
 
+            DebugLogger.d(tag, "Response status: ${response.status}")
             val claudeResponse = response.body<ClaudeResponse>()
 
             if (claudeResponse.error != null) {
@@ -89,9 +97,12 @@ class ClaudeApiService {
             } else {
                 val text = claudeResponse.content?.firstOrNull { it.type == "text" }?.text
                 if (text != null) {
-                    DebugLogger.d(tag, "Received response from Claude API")
+                    DebugLogger.d(tag, "=== API Response ===")
+                    DebugLogger.d(tag, "Response length: ${text.length} chars")
+                    DebugLogger.d(tag, "Response preview: ${text.take(200)}...")
                     ApiResult.Success(text)
                 } else {
+                    DebugLogger.e(tag, "No text in response. Content blocks: ${claudeResponse.content?.size ?: 0}")
                     ApiResult.Error("No text response from API")
                 }
             }
