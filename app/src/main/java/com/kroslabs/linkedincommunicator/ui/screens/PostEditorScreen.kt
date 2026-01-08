@@ -9,12 +9,12 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.History
+import androidx.compose.material.icons.filled.MergeType
 import androidx.compose.material.icons.filled.SwapHoriz
 import androidx.compose.material3.BottomAppBar
 import androidx.compose.material3.Icon
@@ -25,6 +25,7 @@ import androidx.compose.material3.ScrollableTabRow
 import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -45,7 +46,8 @@ fun PostEditorScreen(
     viewModel: MainViewModel,
     onShowAiActions: () -> Unit,
     onShowPostSwitcher: () -> Unit,
-    onShowVersionHistory: () -> Unit
+    onShowVersionHistory: () -> Unit,
+    onAssemblePost: () -> Unit
 ) {
     val post by viewModel.currentPost.collectAsState()
     val selectedLanguage by viewModel.selectedLanguage.collectAsState()
@@ -58,8 +60,15 @@ fun PostEditorScreen(
         Language.ROMANIAN -> currentPost.romanianText
     }
 
-    var textFieldValue by remember(currentPost.id, selectedLanguage, currentText) {
-        mutableStateOf(TextFieldValue(currentText))
+    var textFieldValue by remember(currentPost.id, selectedLanguage) {
+        mutableStateOf(TextFieldValue(currentText, TextRange(currentText.length)))
+    }
+
+    // Sync text when post or language changes externally (e.g., AI operations, loading different post)
+    LaunchedEffect(currentPost.id, selectedLanguage, currentText) {
+        if (textFieldValue.text != currentText) {
+            textFieldValue = TextFieldValue(currentText, TextRange(currentText.length))
+        }
     }
 
     Column(
@@ -94,21 +103,21 @@ fun PostEditorScreen(
         }
 
         // Text editor
-        SelectionContainer {
-            OutlinedTextField(
-                value = textFieldValue,
-                onValueChange = { newValue ->
-                    textFieldValue = newValue
-                    viewModel.updateText(newValue.text, selectedLanguage)
-                },
-                placeholder = { Text(selectedLanguage.placeholder) },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .weight(1f)
-                    .padding(16.dp),
-                textStyle = MaterialTheme.typography.bodyLarge
-            )
-        }
+        OutlinedTextField(
+            value = textFieldValue,
+            onValueChange = { newValue ->
+                textFieldValue = newValue
+                viewModel.updateText(newValue.text, selectedLanguage)
+            },
+            placeholder = { Text(selectedLanguage.placeholder) },
+            modifier = Modifier
+                .fillMaxWidth()
+                .weight(1f)
+                .padding(16.dp),
+            textStyle = MaterialTheme.typography.bodyLarge,
+            minLines = 10,
+            singleLine = false
+        )
 
         // Bottom toolbar
         BottomAppBar {
@@ -132,6 +141,12 @@ fun PostEditorScreen(
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Icon(Icons.Default.History, contentDescription = "Version History")
                         Text("History", style = MaterialTheme.typography.labelSmall)
+                    }
+                }
+                IconButton(onClick = onAssemblePost) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Icon(Icons.Default.MergeType, contentDescription = "Assemble Post")
+                        Text("Assemble", style = MaterialTheme.typography.labelSmall)
                     }
                 }
                 IconButton(onClick = { viewModel.closeCurrentPost() }) {

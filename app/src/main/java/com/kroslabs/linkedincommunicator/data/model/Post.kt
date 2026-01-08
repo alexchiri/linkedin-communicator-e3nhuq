@@ -56,6 +56,13 @@ enum class Language {
             ROMANIAN -> "Romanian"
         }
 
+    val flag: String
+        get() = when (this) {
+            SWEDISH -> "🇸🇪"
+            ENGLISH -> "🇬🇧"
+            ROMANIAN -> "🇷🇴"
+        }
+
     val placeholder: String
         get() = "Write your post in ${displayName}..."
 }

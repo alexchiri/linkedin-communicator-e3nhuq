@@ -41,6 +41,11 @@ data class TranslationHelpState(
     val isVisible: Boolean = false
 )
 
+data class AssembledPostState(
+    val assembledText: String = "",
+    val isVisible: Boolean = false
+)
+
 class MainViewModel(
     private val postStorage: PostStorage,
     private val secureStorage: SecureStorage,
@@ -74,6 +79,9 @@ class MainViewModel(
 
     private val _translationHelpState = MutableStateFlow(TranslationHelpState())
     val translationHelpState: StateFlow<TranslationHelpState> = _translationHelpState.asStateFlow()
+
+    private val _assembledPostState = MutableStateFlow(AssembledPostState())
+    val assembledPostState: StateFlow<AssembledPostState> = _assembledPostState.asStateFlow()
 
     val syncStatus: StateFlow<SyncStatus> = syncService.syncStatus
     val isSignedIn: StateFlow<Boolean> = syncService.isSignedIn
@@ -560,6 +568,45 @@ class MainViewModel(
         val updatedPost = post.copy(workflowStage = stage, modifiedAt = System.currentTimeMillis())
         _currentPost.value = updatedPost
         _openPosts.value = _openPosts.value.map { if (it.id == post.id) updatedPost else it }
+    }
+
+    fun assemblePost() {
+        val post = _currentPost.value ?: return
+
+        val parts = mutableListOf<String>()
+
+        // Build header showing which languages are included
+        val includedFlags = mutableListOf<String>()
+        if (post.swedishText.isNotBlank()) includedFlags.add(Language.SWEDISH.flag)
+        if (post.englishText.isNotBlank()) includedFlags.add(Language.ENGLISH.flag)
+        if (post.romanianText.isNotBlank()) includedFlags.add(Language.ROMANIAN.flag)
+
+        if (includedFlags.isEmpty()) {
+            _errorMessage.value = "No content to assemble"
+            return
+        }
+
+        // Add each language section with flag separator
+        if (post.swedishText.isNotBlank()) {
+            parts.add("${Language.SWEDISH.flag} ${Language.SWEDISH.displayName}\n\n${post.swedishText}")
+        }
+        if (post.englishText.isNotBlank()) {
+            parts.add("${Language.ENGLISH.flag} ${Language.ENGLISH.displayName}\n\n${post.englishText}")
+        }
+        if (post.romanianText.isNotBlank()) {
+            parts.add("${Language.ROMANIAN.flag} ${Language.ROMANIAN.displayName}\n\n${post.romanianText}")
+        }
+
+        val assembledText = parts.joinToString("\n\n---\n\n")
+        _assembledPostState.value = AssembledPostState(
+            assembledText = assembledText,
+            isVisible = true
+        )
+        DebugLogger.d(tag, "Assembled post with ${includedFlags.size} languages")
+    }
+
+    fun dismissAssembledPost() {
+        _assembledPostState.value = AssembledPostState()
     }
 
     // Settings

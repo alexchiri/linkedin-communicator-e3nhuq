@@ -56,6 +56,7 @@ fun MainScreen(
     val errorMessage by viewModel.errorMessage.collectAsState()
     val diffViewState by viewModel.diffViewState.collectAsState()
     val translationHelpState by viewModel.translationHelpState.collectAsState()
+    val assembledPostState by viewModel.assembledPostState.collectAsState()
 
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
@@ -146,7 +147,8 @@ fun MainScreen(
                         viewModel = viewModel,
                         onShowAiActions = { showAiActions = true },
                         onShowPostSwitcher = { showPostSwitcher = true },
-                        onShowVersionHistory = { showVersionHistory = true }
+                        onShowVersionHistory = { showVersionHistory = true },
+                        onAssemblePost = { viewModel.assemblePost() }
                     )
                 }
             }
@@ -211,6 +213,19 @@ fun MainScreen(
             state = translationHelpState,
             onSuggestionSelected = { viewModel.acceptTranslationSuggestion(it) },
             onDismiss = { viewModel.dismissTranslationHelp() }
+        )
+    }
+
+    if (assembledPostState.isVisible) {
+        AssembledPostDialog(
+            state = assembledPostState,
+            onDismiss = { viewModel.dismissAssembledPost() },
+            onCopied = {
+                viewModel.dismissAssembledPost()
+                scope.launch {
+                    snackbarHostState.showSnackbar("Post copied to clipboard")
+                }
+            }
         )
     }
 }
