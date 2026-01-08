@@ -57,6 +57,7 @@ class ClaudeApiService {
                 prettyPrint = true
                 isLenient = true
                 ignoreUnknownKeys = true
+                encodeDefaults = true
             })
         }
     }
