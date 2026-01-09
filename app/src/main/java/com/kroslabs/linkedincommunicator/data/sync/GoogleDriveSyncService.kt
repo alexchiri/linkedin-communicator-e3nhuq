@@ -57,55 +57,85 @@ class GoogleDriveSyncService(
     }
 
     fun checkSignInStatus() {
+        DebugLogger.d(tag, "Checking sign-in status...")
         val account = GoogleSignIn.getLastSignedInAccount(context)
         _isSignedIn.value = account != null
         if (account != null) {
+            DebugLogger.d(tag, "Found existing signed-in account: ${account.email}")
+            DebugLogger.d(tag, "Account ID: ${account.id}")
+            DebugLogger.d(tag, "Granted scopes: ${account.grantedScopes}")
             initializeDriveService(account)
+        } else {
+            DebugLogger.d(tag, "No signed-in account found")
         }
     }
 
     fun initializeDriveService(account: GoogleSignInAccount) {
         DebugLogger.d(tag, "Initializing Drive service for ${account.email}")
-        val credential = GoogleAccountCredential.usingOAuth2(
-            context, listOf(DriveScopes.DRIVE_APPDATA)
-        )
-        credential.selectedAccount = account.account
+        DebugLogger.d(tag, "Account object: ${account.account}")
+        DebugLogger.d(tag, "Server auth code: ${account.serverAuthCode}")
+        DebugLogger.d(tag, "ID token: ${if (account.idToken != null) "present" else "null"}")
 
-        driveService = Drive.Builder(
-            NetHttpTransport(),
-            GsonFactory.getDefaultInstance(),
-            credential
-        )
-            .setApplicationName("LinkedIn Communicator")
-            .build()
+        try {
+            val credential = GoogleAccountCredential.usingOAuth2(
+                context, listOf(DriveScopes.DRIVE_APPDATA)
+            )
+            DebugLogger.d(tag, "Created OAuth2 credential")
 
-        _isSignedIn.value = true
+            credential.selectedAccount = account.account
+            DebugLogger.d(tag, "Set selected account: ${credential.selectedAccount?.name}")
+
+            driveService = Drive.Builder(
+                NetHttpTransport(),
+                GsonFactory.getDefaultInstance(),
+                credential
+            )
+                .setApplicationName("LinkedIn Communicator")
+                .build()
+
+            _isSignedIn.value = true
+            DebugLogger.d(tag, "Drive service initialized successfully")
+        } catch (e: Exception) {
+            DebugLogger.e(tag, "Failed to initialize Drive service", e)
+            _isSignedIn.value = false
+            _syncStatus.value = SyncStatus.ERROR
+        }
     }
 
     fun signOut() {
+        DebugLogger.d(tag, "Signing out from Google Drive...")
         googleSignInClient.signOut()
+            .addOnSuccessListener { DebugLogger.d(tag, "Sign out successful") }
+            .addOnFailureListener { e -> DebugLogger.e(tag, "Sign out failed", e) }
         driveService = null
         _isSignedIn.value = false
-        DebugLogger.d(tag, "Signed out from Google Drive")
+        _syncStatus.value = SyncStatus.IDLE
+        DebugLogger.d(tag, "Local state cleared after sign out")
     }
 
     suspend fun sync(): Boolean = withContext(Dispatchers.IO) {
+        DebugLogger.d(tag, "=== Sync requested ===")
+        DebugLogger.d(tag, "Current isSignedIn state: ${_isSignedIn.value}")
+        DebugLogger.d(tag, "Current syncStatus: ${_syncStatus.value}")
+
         val syncEnabled = preferencesManager.cloudSyncEnabled.first()
+        DebugLogger.d(tag, "Cloud sync enabled in preferences: $syncEnabled")
         if (!syncEnabled) {
-            DebugLogger.d(tag, "Sync disabled, skipping")
+            DebugLogger.d(tag, "Sync disabled in preferences, skipping")
             return@withContext true
         }
 
         val drive = driveService
         if (drive == null) {
-            DebugLogger.w(tag, "Drive service not initialized")
+            DebugLogger.w(tag, "Drive service not initialized - user may not be signed in or OAuth not configured")
+            DebugLogger.w(tag, "To fix: Sign in with Google in Settings, or create OAuth client in Google Cloud Console")
             _syncStatus.value = SyncStatus.OFFLINE
             return@withContext false
         }
 
         try {
             _syncStatus.value = SyncStatus.SYNCING
-            DebugLogger.d(tag, "Starting sync")
+            DebugLogger.d(tag, "Starting sync with Google Drive...")
 
             // Get or create app folder
             val folderId = getOrCreateAppFolder(drive)

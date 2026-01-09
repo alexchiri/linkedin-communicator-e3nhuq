@@ -628,18 +628,22 @@ ${post.romanianText}
     }
 
     fun syncNow() {
+        DebugLogger.d(tag, "syncNow() called")
         viewModelScope.launch {
-            syncService.sync()
+            val result = syncService.sync()
+            DebugLogger.d(tag, "Sync completed with result: $result")
             loadSavedDrafts()
         }
     }
 
     fun handleGoogleSignIn(account: GoogleSignInAccount) {
+        DebugLogger.d(tag, "handleGoogleSignIn() called for: ${account.email}")
         syncService.initializeDriveService(account)
         syncNow()
     }
 
     fun signOutGoogle() {
+        DebugLogger.d(tag, "signOutGoogle() called")
         syncService.signOut()
     }
 

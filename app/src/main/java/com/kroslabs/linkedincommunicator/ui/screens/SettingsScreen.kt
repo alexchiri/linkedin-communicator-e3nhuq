@@ -48,6 +48,8 @@ import com.kroslabs.linkedincommunicator.BuildConfig
 import com.kroslabs.linkedincommunicator.data.model.SyncStatus
 import com.kroslabs.linkedincommunicator.ui.MainViewModel
 import com.kroslabs.linkedincommunicator.ui.components.SyncStatusIcon
+import com.google.android.gms.common.api.ApiException
+import com.kroslabs.linkedincommunicator.logging.DebugLogger
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -72,9 +74,28 @@ fun SettingsScreen(
     val signInLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.StartActivityForResult()
     ) { result ->
+        DebugLogger.d("SettingsScreen", "=== Google Sign-In Result ===")
+        DebugLogger.d("SettingsScreen", "Result code: ${result.resultCode} (RESULT_OK=${Activity.RESULT_OK}, RESULT_CANCELED=${Activity.RESULT_CANCELED})")
+
         if (result.resultCode == Activity.RESULT_OK) {
-            val account = GoogleSignIn.getSignedInAccountFromIntent(result.data).result
-            viewModel.handleGoogleSignIn(account)
+            try {
+                val task = GoogleSignIn.getSignedInAccountFromIntent(result.data)
+                val account = task.getResult(ApiException::class.java)
+                DebugLogger.d("SettingsScreen", "Sign-in successful for: ${account.email}")
+                DebugLogger.d("SettingsScreen", "Account ID: ${account.id}")
+                DebugLogger.d("SettingsScreen", "Granted scopes: ${account.grantedScopes}")
+                viewModel.handleGoogleSignIn(account)
+            } catch (e: ApiException) {
+                DebugLogger.e("SettingsScreen", "Sign-in failed with ApiException")
+                DebugLogger.e("SettingsScreen", "Status code: ${e.statusCode}")
+                DebugLogger.e("SettingsScreen", "Status message: ${e.message}")
+                DebugLogger.e("SettingsScreen", "Common causes: 10 = DEVELOPER_ERROR (OAuth client not configured), 12500 = SIGN_IN_CANCELLED, 12501 = SIGN_IN_CURRENTLY_IN_PROGRESS")
+            }
+        } else if (result.resultCode == Activity.RESULT_CANCELED) {
+            DebugLogger.w("SettingsScreen", "Sign-in was canceled by user or failed")
+            DebugLogger.w("SettingsScreen", "If you didn't cancel, check: 1) OAuth client configured in Google Cloud Console, 2) SHA-1 fingerprint added, 3) Drive API enabled")
+        } else {
+            DebugLogger.e("SettingsScreen", "Sign-in returned unexpected result code: ${result.resultCode}")
         }
     }
 
@@ -261,15 +282,18 @@ fun SettingsScreen(
                         } else {
                             Button(
                                 onClick = {
-                                    val signInClient = GoogleSignIn.getClient(
-                                        context,
-                                        com.google.android.gms.auth.api.signin.GoogleSignInOptions.Builder(
-                                            com.google.android.gms.auth.api.signin.GoogleSignInOptions.DEFAULT_SIGN_IN
-                                        )
-                                            .requestEmail()
-                                            .requestScopes(com.google.android.gms.common.api.Scope(com.google.api.services.drive.DriveScopes.DRIVE_APPDATA))
-                                            .build()
+                                    DebugLogger.d("SettingsScreen", "=== Initiating Google Sign-In ===")
+                                    DebugLogger.d("SettingsScreen", "Building GoogleSignInOptions with DRIVE_APPDATA scope")
+                                    val gso = com.google.android.gms.auth.api.signin.GoogleSignInOptions.Builder(
+                                        com.google.android.gms.auth.api.signin.GoogleSignInOptions.DEFAULT_SIGN_IN
                                     )
+                                        .requestEmail()
+                                        .requestScopes(com.google.android.gms.common.api.Scope(com.google.api.services.drive.DriveScopes.DRIVE_APPDATA))
+                                        .build()
+                                    DebugLogger.d("SettingsScreen", "GoogleSignInOptions: scopes=${gso.scopeArray.map { it.scopeUri }}")
+
+                                    val signInClient = GoogleSignIn.getClient(context, gso)
+                                    DebugLogger.d("SettingsScreen", "Launching sign-in intent...")
                                     signInLauncher.launch(signInClient.signInIntent)
                                 },
                                 modifier = Modifier.fillMaxWidth()
