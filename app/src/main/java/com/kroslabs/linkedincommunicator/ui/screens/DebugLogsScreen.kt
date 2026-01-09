@@ -1,7 +1,6 @@
 package com.kroslabs.linkedincommunicator.ui.screens
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -9,7 +8,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
@@ -99,6 +97,7 @@ fun DebugLogsScreen(
                         text = entry.formattedMessage,
                         fontFamily = FontFamily.Monospace,
                         fontSize = 11.sp,
+                        softWrap = true,
                         color = when (entry.level) {
                             LogLevel.VERBOSE -> Color.Gray
                             LogLevel.DEBUG -> Color.Cyan
@@ -108,7 +107,6 @@ fun DebugLogsScreen(
                         },
                         modifier = Modifier
                             .fillMaxWidth()
-                            .horizontalScroll(rememberScrollState())
                             .padding(horizontal = 8.dp, vertical = 2.dp)
                     )
                 }
